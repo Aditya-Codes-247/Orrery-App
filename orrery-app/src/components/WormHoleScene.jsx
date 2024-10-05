@@ -113,7 +113,7 @@ function Wormhole() {
 }
 
 const WormholeScene = ({ onWormholeEnd }) => {
-  const [timeLeft, setTimeLeft] = useState(90); // Timer for wormhole duration
+  const [timeLeft, setTimeLeft] = useState(5); // Timer for wormhole duration
 
   // Timer countdown logic
   useEffect(() => {
@@ -124,7 +124,7 @@ const WormholeScene = ({ onWormholeEnd }) => {
     const timer = setTimeout(() => {
       clearInterval(interval);
       onWormholeEnd(); // Trigger the end of the wormhole after 90 seconds
-    }, 90000); // 90 seconds
+    }, 5000); // 90 seconds
 
     return () => {
       clearTimeout(timer);
