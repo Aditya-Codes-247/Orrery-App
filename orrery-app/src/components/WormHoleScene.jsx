@@ -1,49 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import React, { useEffect, useRef,useState } from 'react';
 import { Canvas, useFrame, extend, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
-import spline from './spline.js'; // Make sure to have spline.js with your curve logic
+import * as THREE from 'three';
+import spline from './spline'; // Import spline from your file
 
 extend({ EffectComposer, RenderPass, UnrealBloomPass });
 
-const WormholeScene = ({ onWormholeEnd }) => {
-  const [timeLeft, setTimeLeft] = useState(90); // Timer for wormhole duration
-
-  // Timer countdown logic
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
-    }, 1000);
-
-    const timer = setTimeout(() => {
-      clearInterval(interval);
-      onWormholeEnd(); // Trigger the end of the wormhole after 90 seconds
-    }, 90000); // 90 seconds
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
-  }, [onWormholeEnd]);
-
-  return (
-    <>
-      <div className="timer">Time Left: {timeLeft} seconds</div>
-      <Canvas
-        camera={{ fov: 75, position: [0, 0, 5], near: 0.1, far: 1000 }}
-        style={{ height: '100vh', width: '100vw' }}
-      >
-        <Wormhole />
-      </Canvas>
-    </>
-  );
-};
-
 function Wormhole() {
   const { scene, camera, gl } = useThree();
+  const tubeRef = useRef();
   const composerRef = useRef();
 
   // Initialize Orbit Controls
@@ -83,7 +51,6 @@ function Wormhole() {
   }, [scene, camera, gl]);
 
   // Tube geometry and box creation (wormhole)
-  const tubeRef = useRef();
   useEffect(() => {
     const tubeGeo = new THREE.TubeGeometry(spline, 222, 0.65, 16, true);
     const edges = new THREE.EdgesGeometry(tubeGeo, 0.2);
@@ -125,11 +92,14 @@ function Wormhole() {
 
   // Animate the camera moving along the wormhole
   useFrame(({ clock }) => {
-    const time = clock.getElapsedTime() * 0.1;
-    const looptime = 10 * 1000;
+    const tubeGeo = tubeRef.current;
+    if (!tubeGeo) return;
+
+    const time = clock.getElapsedTime() * 0.1; // Adjust speed as needed
+    const looptime = 10; // Total loop time (you can adjust)
     const p = (time % looptime) / looptime;
-    const pos = tubeRef.current?.parameters.path.getPointAt(p);
-    const lookAt = tubeRef.current?.parameters.path.getPointAt((p + 0.03) % 1);
+    const pos = tubeGeo.parameters.path.getPointAt(p);
+    const lookAt = tubeGeo.parameters.path.getPointAt((p + 0.03) % 1);
 
     if (pos && lookAt) {
       camera.position.copy(pos);
@@ -141,5 +111,38 @@ function Wormhole() {
 
   return <OrbitControls ref={controlsRef} />;
 }
+
+const WormholeScene = ({ onWormholeEnd }) => {
+  const [timeLeft, setTimeLeft] = useState(90); // Timer for wormhole duration
+
+  // Timer countdown logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft((prevTime) => prevTime - 1);
+    }, 1000);
+
+    const timer = setTimeout(() => {
+      clearInterval(interval);
+      onWormholeEnd(); // Trigger the end of the wormhole after 90 seconds
+    }, 90000); // 90 seconds
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [onWormholeEnd]);
+
+  return (
+    <>
+      <div className="timer">Time Left: {timeLeft} seconds</div>
+      <Canvas
+        camera={{ fov: 75, position: [0, 0, 5], near: 0.1, far: 1000 }}
+        style={{ height: '100vh', width: '100vw' }}
+      >
+        <Wormhole />
+      </Canvas>
+    </>
+  );
+};
 
 export default WormholeScene;
