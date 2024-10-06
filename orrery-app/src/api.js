@@ -25,4 +25,7 @@ const planetsData = {
       }, 500);  // Simulate network delay
     });
   };
+
+
+  
   

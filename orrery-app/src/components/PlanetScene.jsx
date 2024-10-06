@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-// Define textures for each planet including diffuse and bump maps
 const textures = {
   Mercury: {
     diffuse: './textures/mercury_diffuse.png',
@@ -38,75 +37,63 @@ const textures = {
   }
 };
 
+
 const PlanetScene = ({ planet, onExplore, onExit }) => {
-  const mountRef = useRef(null); // Reference to the DOM element for mounting the Three.js scene
+  const mountRef = useRef(null);
 
   useEffect(() => {
+    const mount = mountRef.current;
+
     // Setup scene, camera, and renderer
-    const w = mountRef.current.clientWidth;
-    const h = mountRef.current.clientHeight;
+    const w = mount.clientWidth;
+    const h = mount.clientHeight;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-    camera.position.z = 5;
+    camera.position.z = 3;  // Adjust for proper view distance
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
-    mountRef.current.appendChild(renderer.domElement);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    mount.appendChild(renderer.domElement);
 
-    // Create Earth group
-    const earthGroup = new THREE.Group();
-    earthGroup.rotation.z = (-23.4 * Math.PI) / 180;
-    scene.add(earthGroup);
+    // Create planet group
+    const planetGroup = new THREE.Group();
+    scene.add(planetGroup);
 
-    // OrbitControls for camera interaction
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    const detail = 12;
     const loader = new THREE.TextureLoader();
-    const geo = new THREE.IcosahedronGeometry(1, detail);
-    
-    // Load the diffuse and bump texture based on the selected planet
+
+    // Load texture with error handling
     const material = new THREE.MeshPhongMaterial({
-      map: loader.load(textures[planet].diffuse), // Diffuse texture
-      bumpMap: loader.load(textures[planet].bump), // Bump texture
+      map: loader.load(
+        textures[planet]?.diffuse,
+        () => {
+          console.log("Texture loaded successfully for", planet);
+        },
+        undefined,
+        (error) => {
+          console.error("Error loading texture for", planet, error);
+        }
+      ),
+      bumpMap: loader.load(textures[planet]?.bump),
       bumpScale: 0.04,
     });
-    material.map.colorSpace = THREE.SRGBColorSpace;
-    const earthMesh = new THREE.Mesh(geo, material);
-    earthGroup.add(earthMesh);
 
-    // Lights mesh (using the same texture for simplicity, adjust as needed)
-    const lightsMat = new THREE.MeshBasicMaterial({
-      map: loader.load('./textures/earth_lights.jpg'),
-      blending: THREE.AdditiveBlending,
-    });
-    const lightsMesh = new THREE.Mesh(geo, lightsMat);
-    earthGroup.add(lightsMesh);
+    const geo = new THREE.SphereGeometry(1, 32, 32);
+    const planetMesh = new THREE.Mesh(geo, material);
+    planetGroup.add(planetMesh);
 
-    // Clouds mesh (using the same texture for simplicity, adjust as needed)
-    const cloudsMat = new THREE.MeshStandardMaterial({
-      map: loader.load('./textures/earth_clouds.jpg'),
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending,
-      alphaMap: loader.load('./textures/earth_clouds_trans.jpg'),
-    });
-    const cloudsMesh = new THREE.Mesh(geo, cloudsMat);
-    cloudsMesh.scale.setScalar(1.003);
-    earthGroup.add(cloudsMesh);
+    // Add ambient light to ensure visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
 
-    // Add sun light
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    // Add a basic directional light
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
     sunLight.position.set(-2, 0.5, 1.5);
     scene.add(sunLight);
 
-    // Animation function
     function animate() {
       requestAnimationFrame(animate);
-      earthMesh.rotation.y += 0.002;
-      lightsMesh.rotation.y += 0.002;
-      cloudsMesh.rotation.y += 0.0025;
+      planetMesh.rotation.y += 0.002;
       renderer.render(scene, camera);
       controls.update();
     }
@@ -114,22 +101,19 @@ const PlanetScene = ({ planet, onExplore, onExit }) => {
 
     // Handle window resizing
     const handleWindowResize = () => {
-      const w = mountRef.current.clientWidth;
-      const h = mountRef.current.clientHeight;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleWindowResize);
 
-    // Clean up when the component unmounts
     return () => {
-      if (mountRef.current) { // Check if mountRef exists before removing the child
-        mountRef.current.removeChild(renderer.domElement);
-      }
+      mount.removeChild(renderer.domElement);
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, [planet]); // Include planet in dependencies to reload on change
+  }, [planet]);
 
   return (
     <div className="planet-scene">
