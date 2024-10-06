@@ -54,6 +54,7 @@ const PlanetScene = ({ planet, onExplore, onExit }) => {
     renderer.setSize(w, h);
     mount.appendChild(renderer.domElement);
 
+
     // Create planet group
     const planetGroup = new THREE.Group();
     scene.add(planetGroup);
@@ -87,7 +88,7 @@ const PlanetScene = ({ planet, onExplore, onExit }) => {
     scene.add(ambientLight);
 
     // Add a basic directional light
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
     sunLight.position.set(-2, 0.5, 1.5);
     scene.add(sunLight);
 
@@ -100,14 +101,12 @@ const PlanetScene = ({ planet, onExplore, onExit }) => {
     animate();
 
     // Handle window resizing
-    const handleWindowResize = () => {
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      camera.aspect = w / h;
+    function handleWindowResize () {
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleWindowResize);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', handleWindowResize, false);
 
     return () => {
       mount.removeChild(renderer.domElement);
